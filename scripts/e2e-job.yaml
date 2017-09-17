@@ -1,0 +1,64 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: e2e-job
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-e2e-job
+  namespace: e2e-job
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-e2e-job
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: k8s-e2e-job
+  namespace: e2e-job
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k8s-e2e-job
+  namespace: e2e-job
+spec:
+  template:
+    metadata:
+      labels:
+        app: k8s-e2e-job
+    spec:
+      serviceAccountName: k8s-e2e-job
+      containers:
+      - name: e2e
+        # E2EIMAGE will be replaced when applying the manifest
+        image: E2EIMAGE
+        imagePullPolicy: Never
+        # This focus works well with kubeadm clusters. Feel free to customize it to your liking
+        command:
+        - /usr/bin/e2e.test
+        - -ginkgo.focus=\[Conformance\]|\[Feature:BootstrapTokens\]|\[Feature:NodeAuthorizer\]
+        - -report-dir=/var/log/kubernetes/e2e
+        volumeMounts:
+        - name: e2e
+          mountPath: /var/log/kubernetes/e2e
+      - name: proxy
+        image: E2EIMAGE
+        imagePullPolicy: Never
+        command:
+        - /usr/bin/kubectl
+        - proxy
+        - -p
+        - "8080"
+        volumeMounts:
+        - name: e2e
+          mountPath: /var/log/kubernetes/e2e
+      restartPolicy: Never
+      volumes:
+      - name: e2e
+        emptyDir: {}
