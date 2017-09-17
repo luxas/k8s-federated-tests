@@ -5,8 +5,18 @@ e2e tests on your own machine(s) and then make the test results you get uploaded
 to https://testgrid.k8s.io, the dashboard that the community uses to check the
 health of the project.
 
+![Testgrid](pictures/testgrid.png)
+
+Testgrid, shown above, aggregates all the Kubernetes e2e test results in one place,
+under different dashboards. An example of what one job's test history is visualized as
+is here:
+
+![kubeadm dashboard in testgrid](pictures/job_overview.png)
+
 Most of the testing-related code lives in https://github.com/kubernetes/test-infra
 The tricks I'm about to show here should be upstreamed there eventually as well.
+
+**Note:** This is a demo and a Proof-of-Concept, not an exhaustive guide to federated testing and all its features.
 
 #### What is federated testing?
 
@@ -64,8 +74,12 @@ to use for the code that uploads the test results to the GCS bucket.
 Click on "Create Service Account" and specify a name of choice.
 Select the "Storage -> Storage Object Admin" role for this ServiceAccount and select "Furnish a new private key"
 
+![Create ServiceAccount](pictures/create_sa.png)
+
 When clicking the "Create" button, you will see that a JSON file was automatically downloaded to your computer.
 This is the only place where your Service Account is created, so store and distribute it carefully.
+
+![The ServiceAccount was created](pictures/sa_created.png)
 
 ##### Install `gsutil` and set up access control for the bucket 
 
@@ -139,6 +153,10 @@ Just execute this command, replacing `your-bucket-here` and `my-upgrade-suite` w
 ```bash
 scripts/run-federated-tests.sh your-bucket-here my-upgrade-suite
 ```
+
+Optional env variables here are:
+ - `ARCH`: The architecture of the host machine. Defaults to `amd64`
+ - `POD_CIDR`: The subnet for the pods to use. Defaults to `10.32.0.0/16`, if `10.0.0.0/8` is already used, you may set this to `172.30.0.0/16` for instance
 
 After all the tests have been executed, you should be able to see the results here:
 
