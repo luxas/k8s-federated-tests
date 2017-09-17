@@ -37,7 +37,6 @@ echo "Downloading kubectl..."
 mkdir -p ${TMP_DIR}
 curl -sSL https://dl.k8s.io/ci-cross/${CI_VERSION}/bin/linux/${ARCH}/kubectl > ${TMP_DIR}/kubectl
 echo "Downloading kubeadm..."
-mkdir -p ${TMP_DIR}
 curl -sSL https://dl.k8s.io/ci-cross/${CI_VERSION}/bin/linux/${ARCH}/kubeadm > ${TMP_DIR}/kubeadm
 echo "Downloading e2e.test..."
 curl -sSL https://dl.k8s.io/ci-cross/${CI_VERSION}/kubernetes-test.tar.gz | tar -xz -C ${TMP_DIR} kubernetes/platforms/linux/${ARCH}/e2e.test --strip-components=4

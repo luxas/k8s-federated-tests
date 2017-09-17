@@ -50,24 +50,25 @@ main() {
 
 		gsutil rsync -r ${RESULTS_DIR}/${JOB} gs://${PROJECT}/logs/${JOB}
 
-		POD_CIDR=${POD_CIDR} ARCH=${ARCH} ./kubeadm-up.sh ${CI_VERSION} ${RESULTS_DIR} ${E2E_IMAGE} | tee -a ${JOB_DIR}/build-log.txt
+		POD_CIDR=${POD_CIDR} ARCH=${ARCH} ./cluster-up.sh ${CI_VERSION} ${RESULTS_DIR} ${E2E_IMAGE} | tee -a ${JOB_DIR}/build-log.txt
 		clusterUpTime=$(date +%s)
 
 		echo "Submitting the e2e Batch Job to the cluster"
 		export KUBECONFIG=/etc/kubernetes/admin.conf
-		cat conformance.yaml | sed -e "s|E2EIMAGE|${E2E_IMAGE}|g;" | ${TMP_DIR}/kubectl apply -f -
+		cat e2e-job.yaml | sed -e "s|E2EIMAGE|${E2E_IMAGE}|g;" | ${TMP_DIR}/kubectl apply -f -
+		E2E_NAMESPACE="e2e-job"
 
-		while [[ $(kubectl -n conformance get po -l app=k8s-conformance --no-headers | awk '{print $3}') != "Running" ]]; do
+		while [[ $(${TMP_DIR}/kubectl -n ${E2E_NAMESPACE} get po -l app=k8s-e2e-job --no-headers | awk '{print $3}') != "Running" ]]; do
 			echo "Waiting for Pod to become Running"
 			sleep 5
 		done
 
-		pod_name=$(${TMP_DIR}/kubectl -n conformance get po -l app=k8s-conformance --no-headers | awk '{print $1}')
+		pod_name=$(${TMP_DIR}/kubectl -n ${E2E_NAMESPACE} get po -l app=k8s-e2e-job --no-headers | awk '{print $1}')
 
-		${TMP_DIR}/kubectl -n conformance logs ${pod_name} -c e2e -f | tee -a ${JOB_DIR}/build-log.txt
+		${TMP_DIR}/kubectl -n ${E2E_NAMESPACE} logs ${pod_name} -c e2e -f | tee -a ${JOB_DIR}/build-log.txt
 
 		passed="true"
-		if [[ $(${TMP_DIR}/kubectl -n conformance logs ${pod_name} -c e2e --tail 1) == "FAIL" ]]; then
+		if [[ $(${TMP_DIR}/kubectl -n ${E2E_NAMESPACE} logs ${pod_name} -c e2e --tail 1) == "FAIL" ]]; then
 			passed="false"
 		fi
 
@@ -75,7 +76,7 @@ main() {
 		writeNodesYAML ${JOB_DIR}
 
 		doneTestingTime=$(date +%s)
-		./kubeadm-down.sh ${CI_VERSION} | tee -a ${JOB_DIR}/build-log.txt
+		./cluster-down.sh ${CI_VERSION} | tee -a ${JOB_DIR}/build-log.txt
 		finishTime=$(date +%s)
 
 		writeMetadataJSON ${JOB_DIR} ${CI_VERSION}
