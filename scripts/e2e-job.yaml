@@ -53,8 +53,8 @@ spec:
         command:
         - /usr/bin/kubectl
         - proxy
-        - -p
-        - "8080"
+        - --port=8080
+        - --disable-filter=true
         volumeMounts:
         - name: e2e
           mountPath: /var/log/kubernetes/e2e
